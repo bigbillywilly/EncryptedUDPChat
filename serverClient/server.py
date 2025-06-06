@@ -20,3 +20,29 @@
 # - Teaches:
 #     - How to set up a server with UDP
 #     - Safe decryption and error handling
+
+# server.py
+# Receives encrypted UDP messages and decrypts them
+
+import socket
+from encryption import decrypt_message, load_key
+from config import IP, PORT
+
+def main():
+    key = load_key()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((IP, PORT))
+
+    print("Encrypted UDP Chat Server Listening...\n")
+
+    while True:
+        try:
+            data, addr = sock.recvfrom(4096)
+            decrypted = decrypt_message(data, key)
+            print(f"[{addr}] {decrypted.decode()}")
+
+        except Exception as e:
+            print("Error receiving or decrypting:", e)
+
+if __name__ == "__main__":
+    main()

@@ -18,3 +18,9 @@
 # - It prevents duplication of config values across files.
 # - Easy to change if you move to a remote machine or change ports.
 # - Makes the code more maintainable and readable.
+
+# config.py
+
+IP = "127.0.0.1"  # Localhost (your own computer)
+PORT = 5005       # Arbitrary UDP port
+BUFFER_SIZE = 4096  # Maximum size of a single UDP packet (4KB)
