@@ -1,15 +1,22 @@
-import socket
+# server.py
+# This script listens for incoming encrypted UDP messages and decrypts them.
 
-# Created a UDP socket (AF_INET = IPv4, SOCK_DGRAM = UDP)
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Properties
+# - sock: socket.socket
+#     A UDP socket that listens for messages on IP:PORT
+# - key: bytes
+#     The shared encryption key used to decrypt received data
 
- # Binds the socket to an address and port
-sock.bind(("localhost", 9999))
+# Main Flow:
+# 1. Load the encryption key from 'key.key'
+# 2. Bind the socket to IP and PORT from config.py
+# 3. Continuously wait for UDP packets using `sock.recvfrom()`
+# 4. Decrypt each received message using `encryption.decrypt_message()`
+# 5. Print the decrypted message (or error if decryption fails)
 
-print("Server listening on port 9999...")
-while True:
-    # Waits to receive a message (blocking call)
-    data, addr = sock.recvfrom(1024)
-    # Prints the received message and the address of the sender
-    print(f"Received from {addr}: {data.decode()}")
-    
+# Why this file matters:
+# - This is the receiver in the communication loop
+# - It handles decryption and displays messages from the client
+# - Teaches:
+#     - How to set up a server with UDP
+#     - Safe decryption and error handling

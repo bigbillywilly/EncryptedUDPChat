@@ -1,19 +1,13 @@
-from cryptography.fernet import Fernet
+# aes_test.py
+# Used for quick standalone testing of encryption functions
 
-# Step 1: Generate a key (in real apps, you save/share this securely)
-# creates a secure encryption key
-key = Fernet.generate_key()
-#makes an encrytpor with that key
-cipher = Fernet(key)
+# Example Use:
+# - Encrypt a sample message
+# - Decrypt it and print to verify correctness
 
-# Step 2: Encrypt a message
-plaintext = "hello secure world"
+# Why this file matters:
+# - Great for debugging encryption logic
+# - Lets you confirm the key is being loaded correctly
+# - Useful before wiring everything into client/server
 
-#encrytpes the plaintext message
-ciphertext = cipher.encrypt(plaintext.encode())
-print("Encrypted:", ciphertext)
-
-# Step 3: Decrypt the message
-decrypted = cipher.decrypt(ciphertext)
-
-print("Decrypted:", decrypted.decode())
+# You don’t need to use this in production — just for testing
