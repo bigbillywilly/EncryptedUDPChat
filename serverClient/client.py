@@ -1,64 +1,44 @@
 # client.py
-# This script acts as the sender. It encrypts messages and sends them via UDP.
+# Sends encrypted messages to a UDP server using RSA public key encryption.
 
-# Properties (used internally)
-# - sock: socket.socket
-#     The UDP socket used to send messages to the server
-# - server_address: tuple
-#     Combines the IP and PORT into one destination
+import socket
+from encryption.rsa_crypto import load_public_key, encrypt_with_public_key
+from config import IP, PORT
 
-# Main Flow:
-# 1. Load the key from 'key.key'
-# 2. Repeatedly prompt the user for input (text messages)
-# 3. Encrypt each message using `encryption.encrypt_message()`
-# 4. Send the encrypted message to the server using `sock.sendto()`
-# 5. User can type "exit" to quit the program
-
-# Why this file matters:
-# - It simulates a secure chat client sending data to a remote server.
-# - Teaches how to:
-#     - Use Python's socket module for UDP
-#     - Securely transmit data
-#     - Work with user input in loops
-
-
-# client.py
-# Sends encrypted messages to a server over UDP
-
-import socket                    # For UDP communication
-from encryption import encrypt_message, load_key  # Import your encryption tools
-from config import IP, PORT     # Shared constants
-
+# -------------------------------
+# Main Client Function
+# -------------------------------
 def main():
-    # Load the shared encryption key from file
-    key = load_key()  # Returns bytes
+    # Step 1: Load server's public RSA key from encryption/public.pem
+    try:
+        public_key = load_public_key()
+    except FileNotFoundError:
+        print("Public key file not found. Make sure encryption/public.pem exists.")
+        return
 
-    # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Step 2: Initialize UDP socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    print(f"Connected to {IP}:{PORT}")
+    print("Type your messages below (type 'exit' to quit):\n")
 
-    print("Encrypted UDP Chat Client Started!")
-    print("Type 'exit' to quit.\n")
-
+    # Step 3: Loop to get input, encrypt, and send
     while True:
-        # Get a message from the user
-        user_input = input("You: ")
-
-        if user_input.lower() == "exit":
-            print("Goodbye!")
+        message = input("You: ")
+        if message.lower() == "exit":
+            print("[🔚] Exiting chat.")
             break
 
         try:
-            # Convert string to bytes for encryption
-            message_bytes = user_input.encode()
+            # Step 4: Encrypt the message
+            encrypted_message = encrypt_with_public_key(public_key, message.encode())
 
-            # Encrypt the message
-            encrypted = encrypt_message(message_bytes, key)
-
-            # Send the encrypted message to the server
-            sock.sendto(encrypted, (IP, PORT))
+            # Step 5: Send to server
+            client_socket.sendto(encrypted_message, (IP, PORT))
 
         except Exception as e:
-            print("Something went wrong:", e)
+            print(f"Failed to send message: {e}")
+
+    client_socket.close()
 
 if __name__ == "__main__":
     main()

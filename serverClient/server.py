@@ -25,24 +25,30 @@
 # Receives encrypted UDP messages and decrypts them
 
 import socket
-from encryption import decrypt_message, load_key
+from encryption.rsa_crypto import load_private_key, decrypt_with_private_key
 from config import IP, PORT
 
 def main():
-    key = load_key()
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((IP, PORT))
+    # Load private key for decryption
+    private_key = load_private_key()
 
-    print("Encrypted UDP Chat Server Listening...\n")
+    # Create a UDP socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server_socket.bind((IP, PORT))
+    print(f" Server is listening on {IP}:{PORT}")
 
     while True:
         try:
-            data, addr = sock.recvfrom(4096)
-            decrypted = decrypt_message(data, key)
-            print(f"[{addr}] {decrypted.decode()}")
+            # Receive data from client
+            encrypted_data, addr = server_socket.recvfrom(4096)  # 4096 bytes max
+            print(f"\nReceived encrypted message from {addr}")
+
+            # Decrypt the message
+            decrypted_message = decrypt_with_private_key(private_key, encrypted_data)
+            print(f" Decrypted message: {decrypted_message.decode()}")
 
         except Exception as e:
-            print("Error receiving or decrypting:", e)
+            print(f"Something went wrong: {e}")
 
 if __name__ == "__main__":
     main()
