@@ -1,54 +1,57 @@
 # server.py
-# This script listens for incoming encrypted UDP messages and decrypts them.
-
-# Properties
-# - sock: socket.socket
-#     A UDP socket that listens for messages on IP:PORT
-# - key: bytes
-#     The shared encryption key used to decrypt received data
-
-# Main Flow:
-# 1. Load the encryption key from 'key.key'
-# 2. Bind the socket to IP and PORT from config.py
-# 3. Continuously wait for UDP packets using `sock.recvfrom()`
-# 4. Decrypt each received message using `encryption.decrypt_message()`
-# 5. Print the decrypted message (or error if decryption fails)
-
-# Why this file matters:
-# - This is the receiver in the communication loop
-# - It handles decryption and displays messages from the client
-# - Teaches:
-#     - How to set up a server with UDP
-#     - Safe decryption and error handling
-
-# server.py
-# Receives encrypted UDP messages and decrypts them
-
 import socket
-from encryption.rsa_crypto import load_private_key, decrypt_with_private_key
+import threading
+from encryption.rsa_crypto import (
+    load_private_key, decrypt_with_private_key,
+    load_public_key_from_bytes, encrypt_with_public_key
+)
 from config import IP, PORT
 
-def main():
-    # Load private key for decryption
-    private_key = load_private_key()
+# Dictionary to store {address: client_public_key}
+client_keys = {}
 
-    # Create a UDP socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.bind((IP, PORT))
-    print(f" Server is listening on {IP}:{PORT}")
+# Load server's private RSA key
+private_key = load_private_key()
 
-    while True:
+# Setup UDP server socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_socket.bind((IP, PORT))
+print(f"[🔐] Server listening on {IP}:{PORT}")
+
+def handle_message(data: bytes, addr):
+    global client_keys
+
+    if addr not in client_keys and data.startswith(b"REGISTER:"):
+        # Extract public key bytes
+        client_pub_key_bytes = data[len("REGISTER:"):]
         try:
-            # Receive data from client
-            encrypted_data, addr = server_socket.recvfrom(4096)  # 4096 bytes max
-            print(f"\nReceived encrypted message from {addr}")
-
-            # Decrypt the message
-            decrypted_message = decrypt_with_private_key(private_key, encrypted_data)
-            print(f" Decrypted message: {decrypted_message.decode()}")
-
+            client_keys[addr] = load_public_key_from_bytes(client_pub_key_bytes)
+            print(f"[✅] Registered client {addr}")
         except Exception as e:
-            print(f"Something went wrong: {e}")
+            print(f"[❌] Failed to load public key from {addr}: {e}")
+        return
+
+    if addr not in client_keys:
+        print(f"[⚠️] Message from unregistered client {addr}. Ignoring.")
+        return
+
+    try:
+        # Decrypt message from client
+        decrypted = decrypt_with_private_key(private_key, data)
+        print(f"[📩] From {addr}: {decrypted.decode()}")
+
+        # Echo reply (re-encrypt with client’s public key)
+        response = f"Received: {decrypted.decode()}".encode()
+        encrypted_reply = encrypt_with_public_key(client_keys[addr], response)
+        server_socket.sendto(encrypted_reply, addr)
+
+    except Exception as e:
+        print(f"[❌] Decryption or reply error: {e}")
+
+def listen():
+    while True:
+        data, addr = server_socket.recvfrom(4096)
+        threading.Thread(target=handle_message, args=(data, addr), daemon=True).start()
 
 if __name__ == "__main__":
-    main()
+    listen()

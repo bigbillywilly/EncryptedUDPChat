@@ -88,3 +88,51 @@ def decrypt_with_private_key(private_key, encrypted_data: bytes) -> bytes:
             label=None
         )
     )
+
+
+def generate_client_rsa_keys():
+    """
+    Generates RSA key pair for the client and saves to encryption/client_*.pem
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    private_path = os.path.join(current_dir, "client_private.pem")
+    public_path = os.path.join(current_dir, "client_public.pem")
+
+    if os.path.exists(private_path) and os.path.exists(public_path):
+        print("[🔑] Client RSA key pair already exists.")
+        return
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    # Save private key
+    with open(private_path, "wb") as f:
+        f.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    # Save public key
+    with open(public_path, "wb") as f:
+        f.write(private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ))
+
+    print("[✅] Generated new client RSA key pair.")
+
+
+def load_client_public_key():
+    """
+    Loads the client's public key
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(current_dir, "client_public.pem")
+    with open(path, "rb") as f:
+        return f.read()
+
+def load_public_key_from_bytes(data: bytes):
+    """
+    Takes raw public key bytes and deserializes to a PublicKey object.
+    """
+    return serialization.load_pem_public_key(data)

@@ -1,4 +1,4 @@
-from encryption.rsa_crypto import generate_rsa_keys
+from serverClient.encryption.rsa_crypto import generate_rsa_keys
 import os
 
 # Get path to encryption folder
